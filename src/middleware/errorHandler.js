@@ -3,7 +3,7 @@ const ErrorHandler = (err, req, res,next) => {
     const errMsg = err.message || 'Something went wrong';
     res.status(errStatus).json({
         message: errMsg,
-        status_code: errStatus,
+        statusCode: errStatus,
         data: err.data
     })
 }

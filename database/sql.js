@@ -58,6 +58,25 @@ export const User = sequelize.define('users',{
     }
 })
 
+export const Product = sequelize.define('Product', {
+    name: {
+      type: DataTypes.STRING,
+    },
+    price: {
+      type: DataTypes.FLOAT,
+    },
+    category: {
+      type: DataTypes.STRING,
+    },
+    image: {
+      type: DataTypes.STRING,
+    },
+    quantity: {
+      type: DataTypes.INTEGER,
+    },
+  });
+
+
 export async function syncDatabase() {
     try {
       await sequelize.sync();

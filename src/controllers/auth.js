@@ -14,13 +14,13 @@ export const Login = async (req,res,next)=>{
         const resultt = await bcrypt.compare(password,result[0].dataValues.password);
         if (resultt){
             const token = jwt.sign({id: result[0].id, isLoggedIn: true}, "password", {expiresIn:"1h"})
-            res.json({message: "Signed in Successfully",status_code:200, token});
+            res.json({message: "Signed in Successfully",statusCode:200, token});
             return;
         }else{
-            next({message:"Wrong Password",status_code:406});
+            next({message:"Wrong Password",statusCode:406});
         }
     }else{
-        next({message:"Email not found",status_code:406});
+        next({message:"Email not found",statusCode:406});
     }
 }
 
@@ -33,16 +33,17 @@ export const Register = async (req,res,next)=>{
         }
     })
     if (temp.length > 0){
-        res.json({message:"This email is already taken",status_code:401,data:[]});
+        res.json({message:"This email is already taken",statusCode:401,data:[]});
         return;
     }
     try {
         const hashed = bcrypt.hashSync(password,parseInt(process.env.SALTED));
         await User.create({firstname:firstname,lastname:lastname,address:address,email:email,password:hashed,phone:phone,role:1});  
-        res.json({message:"User created successfully",status_code:200,data:[]});
+        res.json({message:"User created successfully",statusCode:200,data:[]});
         syncDatabase();
         return;
     } catch (error) {
-        next({message:"Error creating your account",status_code:500,error});
+        console.log(error);
+        next({message:"Error creating your account",statusCode:500,error});
     }
 }
