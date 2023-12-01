@@ -13,7 +13,7 @@ app.use(cors());
 
 app.use("/auth",authRouter);
 app.use("/user",userRouter);
-app.use("*",()=>{
+app.use("*",(req,res,next)=>{
     res.json("Invalid router")
     console.log("Invalid router");
 });
@@ -26,7 +26,6 @@ try {
 } catch (error) {
     console.log('Failed to connect to sql');
 }
-
 app.listen(3000,()=>{
     console.log("Listening on localhost port 3000!");
 })

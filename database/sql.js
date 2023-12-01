@@ -55,7 +55,12 @@ export const User = sequelize.define('users',{
     role:{
         type: DataTypes.INTEGER,
         defaultValue: 1
-    }
+    },
+    resetToken:{
+      type: DataTypes.STRING,
+      allowNull: true
+  }
+
 })
 
 export const Product = sequelize.define('Product', {

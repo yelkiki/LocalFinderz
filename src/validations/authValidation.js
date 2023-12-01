@@ -18,3 +18,15 @@ export const loginValid = {
     })
 }
 
+export const mailValid = {
+    body: joi.object().required().keys({
+        email: joi.string().email().required(),  
+    })
+}
+
+export const resetValid = {
+    body: joi.object().required().keys({
+        newPassword: joi.string().required().min(8).regex(/^[a-zA-Z0-9]+$/),  
+    })
+}
+
