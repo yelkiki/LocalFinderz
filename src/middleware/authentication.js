@@ -6,6 +6,7 @@ export const authorization = ()=>{
     return (req,res,next)=>{
         try {
             if (req.user.role != 2){
+                console.log(req.user.role);
                 res.status(401).json({message: "Not Authorized User",statusCode: 401});
                 return;
             }

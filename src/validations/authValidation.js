@@ -24,9 +24,17 @@ export const mailValid = {
     })
 }
 
+export const tokenValid = {
+    body: joi.object().required().keys({
+        token: joi.string().required()
+    })
+}
+
 export const resetValid = {
     body: joi.object().required().keys({
-        newPassword: joi.string().required().min(8).regex(/^[a-zA-Z0-9]+$/),  
+        id: joi.number().required(),
+        newPassword: joi.string().required().min(8).regex(/^[a-zA-Z0-9]+$/), 
+        cPassword: joi.string().required().valid(joi.ref("newPassword")), 
     })
 }
 

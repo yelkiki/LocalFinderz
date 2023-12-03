@@ -63,13 +63,46 @@ export const User = sequelize.define('users',{
 
 })
 
+export const Brand = sequelize.define('brands',{
+  name:{
+      type: DataTypes.STRING,
+      allowNull: false,
+      primaryKey: true
+  },
+  email:{
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  address:{   
+      type: DataTypes.STRING,
+      allowNull:false
+  },
+  phone:{
+      type: DataTypes.INTEGER,
+      allowNull: false
+  },
+  logo:{
+      type: DataTypes.STRING,
+  }
+})
+
 export const Product = sequelize.define('Product', {
-    name: {
+    id:{
+      type: DataTypes.INTEGER,
+      autoIncrement : true,
+      primaryKey: true
+    },name: {
       type: DataTypes.STRING,
     },
     price: {
       type: DataTypes.FLOAT,
     },
+    sex: {
+      type: DataTypes.STRING,
+    },
+    // brandName: {
+    //   type: DataTypes.STRING,
+    // },
     category: {
       type: DataTypes.STRING,
     },
@@ -80,6 +113,10 @@ export const Product = sequelize.define('Product', {
       type: DataTypes.INTEGER,
     },
   });
+
+
+Brand.hasMany(Product, { foreignKey: 'brand' ,as: 'products'});
+Product.belongsTo(Brand, { foreignKey: 'brand' ,as: 'brandDetails'});
 
 
 export async function syncDatabase() {

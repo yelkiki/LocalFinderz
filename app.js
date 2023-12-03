@@ -1,10 +1,11 @@
 import express from 'express';
-import { authRouter, userRouter } from './src/routes/indexRouter.js';
+import { adminRouter, authRouter, userRouter } from './src/routes/indexRouter.js';
 import sequelize, { syncDatabase } from './database/sql.js';
 import ErrorHandler from './src/middleware/errorHandler.js';
 import cors from 'cors';
 
-// use sqlite aw postgreSQL
+
+
 // shoof docker 3shan el app yeshta8al 3ala kol el machines
 
 const app = express();
@@ -13,6 +14,7 @@ app.use(cors());
 
 app.use("/auth",authRouter);
 app.use("/user",userRouter);
+app.use("/admin",adminRouter);
 app.use("*",(req,res,next)=>{
     res.json("Invalid router")
     console.log("Invalid router");
@@ -26,6 +28,7 @@ try {
 } catch (error) {
     console.log('Failed to connect to sql');
 }
+
 app.listen(3000,()=>{
     console.log("Listening on localhost port 3000!");
 })

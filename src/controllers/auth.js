@@ -4,7 +4,6 @@ import jwt from 'jsonwebtoken';
 import { sendEmail } from '../services/nodeMailer.js';
 import crypto from 'crypto'
 import { configDotenv } from "dotenv";
-import { error } from 'console';
 configDotenv("../../config/.env")
 
 
@@ -40,8 +39,7 @@ export const Register = async (req,res,next)=>{
         }
     })
     if (temp.length > 0){
-        res.json({message:"This email is already taken",statusCode:401,data:[]});
-        return;
+        next({message:"This email is already taken",statusCode:401,data:[]});
     }
     try {
         const hashed = bcrypt.hashSync(password,parseInt(process.env.SALTED));
@@ -57,7 +55,7 @@ export const Register = async (req,res,next)=>{
 
 export const sendmail = async (req,res,next)=>{
     const {email} = req.body
-    const token = crypto.randomBytes(20).toString('hex');
+    const token = crypto.randomBytes(3).toString('hex');
     try {
         // Send reset password link via email
         const resetEmailHtml = `
@@ -73,9 +71,10 @@ export const sendmail = async (req,res,next)=>{
 
         <p>Hello,</p>
 
-        <p>We received a request to reset your password. To proceed with the password reset, please click the link below:</p>
+        <p>We received a request to reset your password.</p>
 
-        <a href="http://localhost:3000/auth/reset/${token}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+        <p>Your password reset code is: <strong><h3>${token}</h3></strong></p>
+       
 
         <p>If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
 
@@ -89,7 +88,7 @@ export const sendmail = async (req,res,next)=>{
         if (emailResult.accepted.length){
             const user = await User.findOne({ where: { email } });
             if (!user) {
-              return res.status(404).send('User not found');
+              next({ message: "This email isn't Registered", statusCode: 200, data: [] });
             }
         
             // Update the user's row in the database with the token
@@ -105,22 +104,40 @@ export const sendmail = async (req,res,next)=>{
 }
 
 
+
+
+export const VerifyToken = async (req,res,next)=>{
+  const {token} = req.body;
+  try {
+    const user = await User.findOne({
+      where: {
+        resetToken: token,
+      },
+    });
+    if (!user) {
+      next({message:'Invalid token',statusCode:400,data:[]});
+    }
+    res.json({message:"Valid Token",statusCode:200,data:user.dataValues.id})
+    // reset password function to update new password in database
+  } catch (error) {
+    next({message:'Could not validate Token',statusCode:400,data:[]});
+  }
+}
+
+
 export const ResetPassword = async (req,res,next)=>{
-    const { token } = req.params;
-    const { newPassword } = req.body;
+    
+    const { id,newPassword } = req.body;
     try {
+        // Update user's password and clear/reset the resetToken field
         const user = await User.findOne({
           where: {
-            resetToken: token,
+            id: id,
           },
         });
-        if (!user) {
-          next({message:'Invalid token',statusCode:400,data:[]});
-        }
-        // Update user's password and clear/reset the resetToken field
         const hashed = bcrypt.hashSync(newPassword,parseInt(process.env.SALTED));
         await user.update({
-        password: hashed,
+          password: hashed,
           resetToken: null
         });    
         res.json({message:'Password reset successful',statusCode:200,data:[]});
