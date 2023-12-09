@@ -2,10 +2,12 @@
 import userRouter from './user/userRouter.js';
 import authRouter from './auth/authRouter.js';
 import adminRouter from './admin/adminRouter.js'
+import productRouter from './products/productRouter.js'
 
 
 export{
     userRouter,
     authRouter,
-    adminRouter
+    adminRouter,
+    productRouter
 }

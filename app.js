@@ -1,5 +1,5 @@
 import express from 'express';
-import { adminRouter, authRouter, userRouter } from './src/routes/indexRouter.js';
+import { adminRouter, authRouter, productRouter, userRouter } from './src/routes/indexRouter.js';
 import sequelize, { syncDatabase } from './database/sql.js';
 import ErrorHandler from './src/middleware/errorHandler.js';
 import cors from 'cors';
@@ -15,6 +15,7 @@ app.use(cors());
 app.use("/auth",authRouter);
 app.use("/user",userRouter);
 app.use("/admin",adminRouter);
+app.use("/product",productRouter);
 app.use("*",(req,res,next)=>{
     res.json("Invalid router")
     console.log("Invalid router");

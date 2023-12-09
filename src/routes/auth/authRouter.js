@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { Login, Register, ResetPassword, VerifyToken, sendmail } from "../../controllers/auth.js";
+import { Login, Register, ResetPassword, VerifyToken, sendmail } from "./controller/auth.js";
 import validation from "../../middleware/validation.js";
-import { loginValid, mailValid, registerValid, resetValid, tokenValid } from "../../validations/authValidation.js";
+import { loginValid, mailValid, registerValid, resetValid, tokenValid } from "./controller/authValidation.js";
 
 const router = new Router();
 

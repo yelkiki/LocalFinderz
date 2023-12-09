@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authentication, authorization } from "../../middleware/authentication.js";
-import { addBrand, addProduct, deleteUser, removeBrand, removeProduct, updateProduct } from "../../controllers/admin.js";
+import { addBrand, addProduct, deleteUser, removeBrand, removeProduct, updateProduct } from "./controller/admin.js";
 
 const router = new Router();
 /// kol el routes na2sa validation
