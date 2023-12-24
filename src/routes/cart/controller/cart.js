@@ -58,6 +58,8 @@ export const add2cart = async (req,res,next)=>{
         }else{
             await CartItem.create({cartId:cart.id,productId:id})
         }
+        const prod = await Product.findOne({where:{productId:id}})
+        await cart.update(({total:total+prod.price}))
         res.json({message:"Added!",statusCode:200,data:[]})
     } catch (error) {
         console.log(error);
@@ -72,6 +74,7 @@ export const removeFromCart = async (req,res,next)=>{
         const cartItem = await CartItem.findOne({
             where: { cartId:cart.id, productId:id }
         });
+        const quantity = cartItem.quantity;
         if (cartItem){
             await CartItem.destroy({
                 where: {
@@ -79,6 +82,8 @@ export const removeFromCart = async (req,res,next)=>{
                     productId: id,
                 }
             });
+            const prod = await Product.findOne({where:{productId:id}})
+            await cart.update(({total:total-(prod.price*quantity)}))
             res.json({message:"Item Removed",status_code:200,data:[]});
         }else{
             next({message:"Product is not in your cart anymore",statusCode:400,data:[]})
@@ -88,32 +93,6 @@ export const removeFromCart = async (req,res,next)=>{
     }
 }
 
-// Increment Product
-export const incQuant = async (req,res,next)=>{
-    try {
-        const {id} = req.params
-        const cart = await Cart.findOne({where:{userId: req.user.id}})
-        const cartItem = await CartItem.findOne({
-            where: { cartId:cart.id, productId:id }
-        });
-        if (cartItem){
-            await CartItem.increment(
-                { quantity: 1 },
-                {
-                  where: {
-                    cartId: cart.id,
-                    productId: id,
-                  }
-                }
-            );
-            res.json({message:"Added!",statusCode:200,data:[]})
-        }else{
-            next({message:"This Product is not in your cart anymore",statusCode:400,data:[]})
-        }
-    } catch (error) {
-        next({message:"Error Occurred!",statusCode:400,data:[]})
-    }
-}
 
 // Decrement Product
 export const decQuant = async (req,res,next)=>{

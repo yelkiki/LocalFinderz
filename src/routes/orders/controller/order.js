@@ -28,6 +28,8 @@ export const placeOrder = async (req,res,next)=>{
             const currentDate = new Date();
             let order = await Order.create({userId:req.user.id,total:total,date:currentDate});
 
+
+
             const query = `
             INSERT INTO orderdetails (orderId, productId, quantity)
             SELECT o.id AS orderId, ci.productId, ci.quantity
@@ -66,9 +68,10 @@ export const orderDetails = async (req,res,next)=>{
     const {orderId} = req.body;
     try {
         const query = `
-        SELECT p.id,p.name,p.image,od.quantity,p.price*od.quantity as cost
+        SELECT p.id, p.name, p.image, od.quantity, p.price * od.quantity AS cost, o.total
         FROM OrderDetails AS od
         INNER JOIN Products AS p ON od.productId = p.id
+        INNER JOIN orders AS o ON od.orderId = o.id
         WHERE od.orderId = :orderId
         `;
         const items = await sequelize.query(query, {
