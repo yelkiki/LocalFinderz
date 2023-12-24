@@ -27,12 +27,13 @@ export const authentication=()=>{
             }
             const token = authorization.split("LFinders")[1]
             const payLoad = jwt.verify(token,"password")
-            const {id} = payLoad
-            let result = await User.findOne({where:{
-                id: id
-            }});            
-            req.user = result.dataValues;
-            req.user.id = id;
+            const {id} = payLoad;
+            const query = 'SELECT * FROM users WHERE id = ?';
+            const result = await sequelize.query(query, {
+                replacements: [id],
+                type: sequelize.QueryTypes.SELECT
+            });
+            req.user = result[0];
             next();
             
             

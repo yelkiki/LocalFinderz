@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt'
-import { User, syncDatabase } from '../../../../database/sql.js';
+import { sequelize } from '../../../../database/sql.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail } from '../../../services/nodeMailer.js';
 import crypto from 'crypto'
@@ -7,51 +7,60 @@ import { configDotenv } from "dotenv";
 configDotenv("../../config/.env")
 
 
+export const Login = async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    const query = `SELECT * FROM users WHERE email = ?`;
+    const result = await sequelize.query(query, {
+      replacements: [email],
+      type: sequelize.QueryTypes.SELECT
+    });
 
-
-export const Login = async (req,res,next)=>{
-    const {email,password} = req.body;
-    const result = await User.findAll({
-        where:{
-            email: email
-        }
-    })
-    if (result.length > 0){
-        const resultt = await bcrypt.compare(password,result[0].dataValues.password);
-        if (resultt){
-            const token = jwt.sign({id: result[0].id, isLoggedIn: true}, "password", {expiresIn:"1h"})
-            res.json({message: "Signed in Successfully",statusCode:200, token});
-            return;
-        }else{
-            next({message:"Wrong Password",statusCode:406});
-        }
-    }else{
-        next({message:"Email not found",statusCode:406});
+    if (result.length > 0) {
+      
+      const isPasswordCorrect = await bcrypt.compare(password,result[0].password);
+      if (isPasswordCorrect) {
+        const token = jwt.sign({id: result[0].id, isLoggedIn: true}, "password", {expiresIn:"1h"})
+        res.json({message: "Signed in Successfully",statusCode:200, token});
+      } else {
+        next({ message: "Wrong Password", statusCode: 406 });
+      }
+    } else {
+      next({ message: "Email not found", statusCode: 406 });
     }
-}
+  } catch (error) {
+    console.log(error);
+    next({ message: "Error during login", statusCode: 500, data: error });
+  }
+};
 
+export const Register = async (req, res, next) => {
+  const { firstname, lastname, email, password, phone, address } = req.body;
+  try {
+    const checkExistingEmailQuery = `SELECT * FROM users WHERE email = ?`;
+    const existingUser = await sequelize.query(checkExistingEmailQuery, {
+      replacements: [email],
+      type: sequelize.QueryTypes.SELECT
+    });
 
-export const Register = async (req,res,next)=>{
-    const {firstname,lastname,email,password,phone,address} = req.body;
-    let temp = await User.findAll({
-        where:{
-            email:email
-        }
-    })
-    if (temp.length > 0){
-        next({message:"This email is already taken",statusCode:401,data:[]});
+    if (existingUser.length > 0) {
+      next({ message: "This email is already taken", statusCode: 401, data: [] });
+    } else {
+      const hashedPassword = bcrypt.hashSync(password,parseInt(process.env.SALTED));
+
+      const createUserQuery = `INSERT INTO users (firstname, lastname, address, email, password, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)`;
+      await sequelize.query(createUserQuery, {
+        replacements: [firstname, lastname, address, email, hashedPassword, phone, 1]
+      });
+
+      res.json({ message: "User created successfully", statusCode: 200, data: [] });
     }
-    try {
-        const hashed = bcrypt.hashSync(password,parseInt(process.env.SALTED));
-        await User.create({firstname:firstname,lastname:lastname,address:address,email:email,password:hashed,phone:phone,role:1});  
-        res.json({message:"User created successfully",statusCode:200,data:[]});
-        syncDatabase();
-        return;
-    } catch (error) {
-        console.log(error);
-        next({message:"Error creating your account",statusCode:500,error});
-    }
-}
+  } catch (error) {
+    console.log(error);
+    next({ message: "Error creating your account", statusCode: 500, data: error });
+  }
+};
+
 
 export const sendmail = async (req,res,next)=>{
     const {email} = req.body
@@ -83,18 +92,26 @@ export const sendmail = async (req,res,next)=>{
 
         </body>
         </html>
-        `;//////////////////////////////////////////////////////////////////// edit link to add endpoint to reset password
+        `;
         const emailResult = await sendEmail(email, resetEmailHtml);
         if (emailResult.accepted.length){
-            const user = await User.findOne({ where: { email } });
+            const user = await sequelize.query('SELECT * FROM users WHERE email = ?', {
+              replacements: [email],
+              type: sequelize.QueryTypes.SELECT
+            });
+
+        
             if (!user) {
               next({ message: "This email isn't Registered", statusCode: 200, data: [] });
+              return;
             }
         
             // Update the user's row in the database with the token
-            await user.update({
-              resetToken: token,
-            });        
+            await sequelize.query('UPDATE users SET resetToken = ? WHERE email = ?', {
+              replacements: [token, email],
+              type: sequelize.QueryTypes.UPDATE
+            });
+        
             res.json({ message: 'Email sent', statusCode: 200, data: [] });
         }
       } catch (error) {
@@ -104,23 +121,20 @@ export const sendmail = async (req,res,next)=>{
 }
 
 
-
-
 export const VerifyToken = async (req,res,next)=>{
   const {token} = req.body;
   try {
-    const user = await User.findOne({
-      where: {
-        resetToken: token,
-      },
+    const user = await sequelize.query('SELECT * FROM users WHERE resetToken = ?', {
+      replacements: [token],
+      type: sequelize.QueryTypes.SELECT
     });
+
     if (!user) {
-      next({message:'Invalid token',statusCode:400,data:[]});
+      next({ message: 'Invalid Code', statusCode: 400, data: [] });
     }
-    res.json({message:"Valid Token",statusCode:200,data:user.dataValues.id})
-    // reset password function to update new password in database
+    res.json({ message: 'Valid', statusCode: 200, data: user[0].id });
   } catch (error) {
-    next({message:'Could not validate Token',statusCode:400,data:[]});
+    next({message:'Could not validate Code',statusCode:400,data:[]});
   }
 }
 
@@ -130,17 +144,15 @@ export const ResetPassword = async (req,res,next)=>{
     const { id,newPassword } = req.body;
     try {
         // Update user's password and clear/reset the resetToken field
-        const user = await User.findOne({
-          where: {
-            id: id,
-          },
-        });
-        const hashed = bcrypt.hashSync(newPassword,parseInt(process.env.SALTED));
-        await user.update({
-          password: hashed,
-          resetToken: null
-        });    
-        res.json({message:'Password reset successful',statusCode:200,data:[]});
+      const hashed = bcrypt.hashSync(newPassword,parseInt(process.env.SALTED));
+
+      const updateQuery = 'UPDATE users SET password = ?, resetToken = null WHERE id = ?';
+      await sequelize.query(updateQuery, {
+      replacements: [hashed, id],
+      type: sequelize.QueryTypes.UPDATE
+      });
+
+      res.json({ message: 'Password reset successful', statusCode: 200, data: [] });
       } catch (error) {
         next({message:'Error resetting password',statusCode:500,data:error});
       }

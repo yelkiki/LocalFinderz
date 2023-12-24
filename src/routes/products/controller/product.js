@@ -1,4 +1,5 @@
-import { Brand, Product } from "../../../../database/sql.js"
+import { Op } from "sequelize";
+import sequelize, { Brand, Category, Product } from "../../../../database/sql.js"
 
 export const displayAll = async (req,res,next)=>{
     try {
@@ -29,11 +30,23 @@ export const displayProduct = async (req,res,next)=>{
 export const getBrandsProducts = async (req,res,next)=>{
     try {
         const {brand} = req.body
+
+        let BRAND = await Brand.findOne({where:{name:brand}})
+        if (!BRAND){
+            next({message:"Can't find Brand",statusCode:500,data:[]})
+        }
         let products = await Product.findAll({
-            where: brand=brand 
+            where: {
+                brandId: BRAND.dataValues.id
+            }
         })
-        res.json({message:"Products Found",statusCode:200,data:products.dataValues})
+        if (products.length == 0){
+            next({message:"Empty Brand",statusCode:500,data:[]})
+        }else{
+            res.json({message:"Products Found",statusCode:200,data:products})
+        }
     } catch (error) {
+        console.log(error);
         next({message:"Error getting Brand's products",statusCode:500,data:error})
     }
 }
@@ -41,8 +54,73 @@ export const getBrandsProducts = async (req,res,next)=>{
 export const getBrands = async (req,res,next)=>{
     try {
         let brands = await Brand.findAll();
-        res.json({message:"Brands Found",statusCode:200,data:brands.dataValues})
+        if (!brands){
+            next({message:"No Available brands",statusCode:500,data:[]})
+        }
+        res.json({message:"Brands Found",statusCode:200,data:brands})
     } catch (error) {
         next({message:"Error getting brands",statusCode:500,data:error})
     }
 }
+
+export const getCategory = async (req,res,next)=>{
+    try {
+        const {category} = req.body;
+        let cat = await Category.findAll({where:{name:category}})
+        let products = await Product.findAll({where:{
+            categoryId: cat[0].dataValues.id
+        }})
+        if (!products.length){
+            next({message:"No Products available for this category",statusCode:400,data:[]})
+        }else{
+            res.json({message:"Successfull",statusCode:200,data:products})
+        }
+    } catch (error) {
+        console.log(error);
+        next({message:"Error Getting Products in this category",statusCode:400,data:error})
+    }
+}
+
+
+
+export const search = async (req, res, next) => {
+    const { keyword } = req.body;
+  
+    try {
+      const products = await Product.findAll({
+        where: {
+          name: {
+            [Op.like]: `%${keyword}%`,
+          },
+        },
+      });
+      if (!products.length){
+        next({ message: "Cannot find with this keyword", status_code: 400, data:error });
+      }
+      console.log(products[0]);
+      res.json({ message: "found", status_code: 200, data: products });
+    } catch (error) {
+      next({ message: "Invalid keyword", status_code: 400, data:error });
+    }
+};
+
+
+export const filterSex = async (req,res,next)=>{
+    try {
+        const {sex} = req.body;
+    
+        const query = 'Select name,image FROM products WHERE sex = ?';
+        let result = await sequelize.query(query, {
+            replacements: [sex],
+            type: sequelize.QueryTypes.SELECT
+        });
+        if (!result.length){
+            next({message:"Invalid or Empty Gender",statusCode:400,data:[]})
+        }else{
+            res.json({message:"Found",statusCode:200,data:result})
+        }
+    } catch (error) {
+        console.log(error);
+        next({message:"Error Getting Products For this sex",statusCode:400,data:error})
+    }
+};

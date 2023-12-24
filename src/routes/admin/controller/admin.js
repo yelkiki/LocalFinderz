@@ -1,4 +1,4 @@
-import { Brand, Product, User, syncDatabase } from "../../../../database/sql.js";
+import sequelize, { Brand, Category, Product, User, syncDatabase } from "../../../../database/sql.js";
 
 export const addBrand = async (req,res,next)=>{
     const {name,email,address,phone,logo} = req.body;
@@ -27,14 +27,15 @@ export const addBrand = async (req,res,next)=>{
 export const removeBrand = async (req,res,next)=>{
     const {name} = req.body;
     try {
-        await Brand.destroy({
-            where:{
-                name : name
-            }
-        })
-        syncDatabase();
-        res.json({message:"Brand Deleted!",status_code:200,data:[]});
+        const deleteQuery = 'DELETE FROM brands WHERE name = ?';
+        await sequelize.query(deleteQuery, {
+        replacements: [name],
+        type: sequelize.QueryTypes.DELETE
+        });
+
+        res.json({ message: 'Brand Deleted!', status_code: 200, data: [] });
     } catch (error) {
+        console.log(error);
         next({message:"Error Deleting Brand",status_code:400,data:error});
     }
 }
@@ -44,13 +45,22 @@ export const removeBrand = async (req,res,next)=>{
 export const addProduct = async (req,res,next)=>{
     try {
         const {name,price,sex,brand,quantity,category,image} = req.body;
-        if ((await Brand.findAll({where:{name:brand}})).length == 0){
+        
+        let BRAND = await Brand.findOne({where:{name:brand}})
+        let CAT = await Category.findOne({where:{name:category}})
+
+        if (!BRAND){
             next({message:"Invalid Brand", status_code:400,data:[]})
+        }else if(!CAT){
+            next({message:"Invalid Category", status_code:400,data:[]})
+            
+        }else{
+            await Product.create({name:name,price:price,sex:sex,quantity:quantity,image:image,categoryId:CAT.dataValues.id,brandId:BRAND.dataValues.id})
+            syncDatabase();
+            res.json({message:"Product Created!",status_code:200,data:[]});
         }
-        await Product.create({name: name,price: price,sex: sex,brand: brand, category: category,image: image,quantity: quantity})
-        syncDatabase();
-        res.json({message:"Product Created!",status_code:200,data:[]});
     } catch (error) {
+        console.log(error);
         next({message:"Error creating product", status_code:400,data:error})
     }
 }
