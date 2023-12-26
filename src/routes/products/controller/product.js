@@ -75,7 +75,12 @@ export const getCategory = async (req,res,next)=>{
         let cat = await Category.findAll({where:{name:category}})
         let products = await Product.findAll({where:{
             categoryId: cat[0].dataValues.id
-        }})
+        },include: [
+            {
+              model: Brand,
+              attributes: ['name']
+            }
+        ]})
         if (!products.length){
             next({message:"No Products available for this category",statusCode:400,data:[]})
         }else{

@@ -12,7 +12,7 @@ router.get('/displayAll',displayAll);
 router.post('/display',displayProduct);
 router.get('/brands',getBrands);
 router.get('/brandsProducts',getBrandsProducts);
-router.get('/category',getCategory);
+router.post('/category',getCategory);
 router.post('/search',search);
 router.get('/sex',filterSex); // filter sex
 
