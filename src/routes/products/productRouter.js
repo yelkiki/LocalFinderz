@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { displayAll, displayProduct, filterSex, getBrands, getBrandsProducts, getCategory, search } from "./controller/product.js";
+import { displayAll, displayProduct, filterSex, getBrands, getBrandsProducts, getCategory, search, searchBrand } from "./controller/product.js";
 import { authentication } from "../../middleware/authentication.js";
 
 
@@ -14,6 +14,7 @@ router.get('/brands',getBrands);
 router.get('/brandsProducts',getBrandsProducts);
 router.post('/category',getCategory);
 router.post('/search',search);
+router.post('/searchBrand',searchBrand);
 router.get('/sex',filterSex); // filter sex
 
 

@@ -119,6 +119,26 @@ export const search = async (req, res, next) => {
     }
 };
 
+export const searchBrand = async (req, res, next) => {
+    const { keyword } = req.body;
+  
+    try {
+      const brands = await Brand.findAll({
+        where: {
+          name: {
+            [Op.like]: `%${keyword}%`,
+          },
+        }
+      });
+      if (!brands.length){
+        next({ message: "Cannot find Brand with this keyword", statusCode: 400, data:error });
+      }
+      res.json({ message: "found", statusCode: 200, data: brands });
+    } catch (error) {
+      next({ message: "Invalid keyword", statusCode: 400, data:error });
+    }
+};
+
 
 export const filterSex = async (req,res,next)=>{
     try {
