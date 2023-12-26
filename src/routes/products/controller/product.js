@@ -106,11 +106,11 @@ export const search = async (req, res, next) => {
         ]
       });
       if (!products.length){
-        next({ message: "Cannot find with this keyword", status_code: 400, data:error });
+        next({ message: "Cannot find with this keyword", statusCode: 400, data:error });
       }
-      res.json({ message: "found", status_code: 200, data: products });
+      res.json({ message: "found", statusCode: 200, data: products });
     } catch (error) {
-      next({ message: "Invalid keyword", status_code: 400, data:error });
+      next({ message: "Invalid keyword", statusCode: 400, data:error });
     }
 };
 
