@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { displayAll, displayProduct, filterSex, getBrands, getBrandsProducts, getCategory, search } from "./controller/product.js";
+import { authentication } from "../../middleware/authentication.js";
 
 
 

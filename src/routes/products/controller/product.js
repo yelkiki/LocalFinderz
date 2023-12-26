@@ -3,7 +3,13 @@ import sequelize, { Brand, Category, Product } from "../../../../database/sql.js
 
 export const displayAll = async (req,res,next)=>{
     try {
-        let products = await Product.findAll();
+        let products = await Product.findAll({include: [
+            {
+              model: Brand,
+              attributes: ['name']
+            }
+          ]});        
+        
         res.json({message:"Products Displayed",statusCode:200,data:products})
     } catch (error) {
         next({message:"Can't Display Products",statusCode:500,data:error})
@@ -92,12 +98,16 @@ export const search = async (req, res, next) => {
           name: {
             [Op.like]: `%${keyword}%`,
           },
-        },
+        },include: [
+            {
+              model: Brand,
+              attributes: ['name']
+            }
+        ]
       });
       if (!products.length){
         next({ message: "Cannot find with this keyword", status_code: 400, data:error });
       }
-      console.log(products[0]);
       res.json({ message: "found", status_code: 200, data: products });
     } catch (error) {
       next({ message: "Invalid keyword", status_code: 400, data:error });
