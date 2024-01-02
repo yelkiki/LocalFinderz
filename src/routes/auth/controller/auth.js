@@ -132,7 +132,7 @@ export const VerifyToken = async (req,res,next)=>{
     if (!user) {
       next({ message: 'Invalid Code', statusCode: 400, data: [] });
     }
-    res.json({ message: 'Valid', statusCode: 200, data: user[0] });
+    res.json({ message: 'Valid', statusCode: 200, data: user[0].id });
   } catch (error) {
     next({message:'Could not validate Code',statusCode:400,data:[]});
   }
