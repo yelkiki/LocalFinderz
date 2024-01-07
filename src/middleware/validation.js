@@ -18,7 +18,7 @@ const validation = (schema)=>{
                 }
             })
             if (ErrArr.length != 0){
-                next({status_code:400,message:"validation Error",data:ErrArr})
+                next({statusCode:400,message:"validation Error",data:ErrArr})
             }
             next();
         } catch (error) {

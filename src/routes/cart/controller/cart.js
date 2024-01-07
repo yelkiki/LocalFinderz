@@ -23,7 +23,7 @@ export const displayCart = async (req,res,next)=>{
         for (const item of items){
             total+= item.price*item.quantity
         }
-        res.json({message:"Found",status_code:200,data:[items,total]});
+        res.json({message:"Found",statusCode:200,data:[items,total]});
                 
         // const items = await CartItem.findAll({
         //     where:{
@@ -33,7 +33,7 @@ export const displayCart = async (req,res,next)=>{
         // })
     } catch (error) {
         console.log(error);
-        next({message:"error displaying cart",status_code:401,data:error})
+        next({message:"error displaying cart",statusCode:401,data:error})
     }
 }
 
@@ -84,12 +84,12 @@ export const removeFromCart = async (req,res,next)=>{
             });
             const prod = await Product.findOne({where:{productId:id}})
             await cart.update(({total:total-(prod.price*quantity)}))
-            res.json({message:"Item Removed",status_code:200,data:[]});
+            res.json({message:"Item Removed",statusCode:200,data:[]});
         }else{
             next({message:"Product is not in your cart anymore",statusCode:400,data:[]})
         }
     } catch (error) {
-        next({message:"Could not remove item from cart",status_code:400,data:[]});
+        next({message:"Could not remove item from cart",statusCode:400,data:[]});
     }
 }
 

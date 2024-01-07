@@ -7,7 +7,7 @@ export const placeOrder = async (req,res,next)=>{
     try {
         const cart = await Cart.findOne({where:{userId: req.user.id}});
         if (!cart || cart.total === 0){
-            next({message:"Your cart is empty",status_code:400,data:error})
+            next({message:"Your cart is empty",statusCode:400,data:error})
         }else{
             const cartId = cart.id
             const sqlQuery = `
@@ -55,11 +55,11 @@ export const placeOrder = async (req,res,next)=>{
                 }
             })
 
-            res.json({message:"Done",status_code:200,data:[]})
+            res.json({message:"Done",statusCode:200,data:[]})
         }
     } catch (error) {
         console.log(error);
-        next({message:"Could not place order",status_code:400,data:error})
+        next({message:"Could not place order",statusCode:400,data:error})
     }
 }
 
@@ -79,9 +79,9 @@ export const orderDetails = async (req,res,next)=>{
             type: sequelize.QueryTypes.SELECT,
         });
 
-        res.json({message:"Found",status_code:200,data:items})
+        res.json({message:"Found",statusCode:200,data:items})
     } catch (error) {
         console.log(error);
-        next({message:"Could not view order details",status_code:400,data:error})
+        next({message:"Could not view order details",statusCode:400,data:error})
     }
 }

@@ -9,7 +9,7 @@ export const addBrand = async (req,res,next)=>{
             }
         })
         if (temp.length > 0){
-            next({message:"Already Existing Brand", status_code:400,data:error})
+            next({message:"Already Existing Brand", statusCode:400,data:error})
         }else{
             if (logo){
                 await Brand.create({name: name,email: email,address: address,phone: phone, logo: logo})
@@ -17,26 +17,31 @@ export const addBrand = async (req,res,next)=>{
                 await Brand.create({name: name,email: email,address: address,phone: phone})
             }
             syncDatabase();
-            res.json({message:"Brand Created!",status_code:200,data:[]});
+            res.json({message:"Brand Created!",statusCode:200,data:[]});
         }
     } catch (error) {
-        next({message:"Error creating Brand", status_code:400,data:error})
+        next({message:"Error creating Brand", statusCode:400,data:error})
     }
 }
 
 export const removeBrand = async (req,res,next)=>{
     const {name} = req.body;
     try {
-        const deleteQuery = 'DELETE FROM brands WHERE name = ?';
-        await sequelize.query(deleteQuery, {
-        replacements: [name],
-        type: sequelize.QueryTypes.DELETE
-        });
-
-        res.json({ message: 'Brand Deleted!', status_code: 200, data: [] });
+        let brand = await Brand.findAll({where:{name:name}});
+        if (brand.length > 0){
+            const deleteQuery = 'DELETE FROM brands WHERE name = ?';
+            await sequelize.query(deleteQuery, {
+            replacements: [name],
+            type: sequelize.QueryTypes.DELETE
+            });
+    
+            res.json({ message: 'Brand Deleted!', statusCode: 200, data: [] });
+        }else{
+            next({message:"Invalid Brand Name",statusCode:400,data:[]})
+        }
     } catch (error) {
         console.log(error);
-        next({message:"Error Deleting Brand",status_code:400,data:error});
+        next({message:"Error Deleting Brand",statusCode:400,data:error});
     }
 }
 
@@ -50,33 +55,39 @@ export const addProduct = async (req,res,next)=>{
         let CAT = await Category.findOne({where:{name:category}})
 
         if (!BRAND){
-            next({message:"Invalid Brand", status_code:400,data:[]})
+            next({message:"Invalid Brand", statusCode:400,data:[]})
         }else if(!CAT){
-            next({message:"Invalid Category", status_code:400,data:[]})
+            next({message:"Invalid Category", statusCode:400,data:[]})
             
         }else{
             await Product.create({name:name,price:price,sex:sex,quantity:quantity,image:image,categoryId:CAT.dataValues.id,brandId:BRAND.dataValues.id})
             syncDatabase();
-            res.json({message:"Product Created!",status_code:200,data:[]});
+            res.json({message:"Product Created!",statusCode:200,data:[]});
         }
     } catch (error) {
         console.log(error);
-        next({message:"Error creating product", status_code:400,data:error})
+        next({message:"Error creating product", statusCode:400,data:error})
     }
 }
 
 export const removeProduct = async (req,res,next)=>{
     const {id} = req.params;
     try {
-        await Product.destroy({
-            where:{
-                id : id
-            }
-        })
-        syncDatabase();
-        res.json({message:"Product Deleted!",status_code:200,data:[]});
+
+        let product = await Product.findAll({where:{id:id}})
+        if (product.length > 0){
+            await Product.destroy({
+                where:{
+                    id : id
+                }
+            })
+            syncDatabase();
+            res.json({message:"Product Deleted!",statusCode:200,data:[]});
+        }else{
+            next({message:"Invalid ID",statusCode:400,data:[]})
+        }
     } catch (error) {
-        next({message:"Error Deleting Product",status_code:400,data:error});
+        next({message:"Error Deleting Product",statusCode:400,data:error});
     }
 }
 
@@ -91,10 +102,10 @@ export const updateProduct = async (req,res,next)=>{
         await prod.update({quantity:quantity});
         await prod.save();
         syncDatabase();
-        res.json({message:"Product Edited!",status_code:200,data:[]});
+        res.json({message:"Product Edited!",statusCode:200,data:[]});
         
     } catch (error) {
-        next({message:"Error Editing Product",status_code:400,data:error});
+        next({message:"Error Editing Product",statusCode:400,data:error});
     }
 }
 
@@ -108,12 +119,12 @@ export const deleteUser = async(req,res,next)=>{
                 }
             })
             syncDatabase();
-            res.json({message:"User Deleted Successfully",status_code:200,data:[]});
+            res.json({message:"User Deleted Successfully",statusCode:200,data:[]});
         }else{
-            next({message:"Invalid Email",status_code:400,data:[]});
+            next({message:"Invalid Email",statusCode:400,data:[]});
         }
     } catch (error) {
         console.log(error);
-        next({message:"Error deleting user",status_code:400,data:error});
+        next({message:"Error deleting user",statusCode:400,data:error});
     }
 }
