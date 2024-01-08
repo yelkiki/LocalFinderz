@@ -1,36 +1,37 @@
-import sequelize, { Cart, CartItem, Product } from "../../../../database/sql.js";
+import sequelize, { Order, OrderDetail, Product } from "../../../../database/sql.js";
 
 
 //// e3mel function bet calculate total w bet7oto
 export const displayCart = async (req,res,next)=>{
     try {
-        let cart = await Cart.findOne({where:{userId: req.user.id}})
+        let cart = await Order.findOne({
+            where:{
+                userId: req.user.id,
+                status: false
+            }
+        })
         if (!cart){
-            cart = await Cart.create({userId:req.user.id})    
+            const currentDate = new Date();
+            cart = await Order.create({
+                userId: req.user.id,
+                status: false,
+                date: currentDate,
+                total: 0
+            })   
         }             
-        const cartId = cart.id
+        const userid = req.user.id
         const sqlQuery = `
-        SELECT Products.name,Products.price,CartItems.quantity
-        FROM CartItems
-        JOIN Products ON CartItems.productId = Products.id
-        WHERE CartItems.cartId = :cartId
+        SELECT Products.name,Products.price,OrderDetails.quantity
+        FROM OrderDetails
+        JOIN Products ON OrderDetails.productId = Products.id
+        JOIN Orders ON Orders.id = OrderDetails.orderId
+        WHERE Orders.userId = :userid AND Orders.status = false
         `;
         const items = await sequelize.query(sqlQuery, {
-            replacements: { cartId },
+            replacements: { userid },
             type: sequelize.QueryTypes.SELECT,
         });
-        let total = 0;
-        for (const item of items){
-            total+= item.price*item.quantity
-        }
-        res.json({message:"Found",statusCode:200,data:[items,total]});
-                
-        // const items = await CartItem.findAll({
-        //     where:{
-        //         cartId:cart.id
-        //     },
-        //     include: [{ model: Product }]
-        // })
+        res.json({message:"Found",statusCode:200,data:[items,cart.dataValues.total]});
     } catch (error) {
         console.log(error);
         next({message:"error displaying cart",statusCode:401,data:error})
@@ -41,85 +42,155 @@ export const add2cart = async (req,res,next)=>{
     const {id} = req.params;
     try {
         
-        const cart = await Cart.findOne({where:{userId: req.user.id}})
+        let cart = await Order.findOne({
+            where:{
+                userId: req.user.id,
+                status: false
+            }
+        })
         if (!cart){
-            cart = await Cart.create({userId:req.user.id})    
+            const currentDate = new Date();
+            cart = await Order.create({
+                userId: req.user.id,
+                status: false,
+                date: currentDate,
+                total: 0
+            })
         }
-        if(await CartItem.findOne({where:{cartId:cart.id,productId:id}})){
-            await CartItem.increment(
+        if(await OrderDetail.findOne({where:{orderId:cart.dataValues.id,productId:id}})){
+            await OrderDetail.increment(
                 { quantity: 1 },
                 {
                   where: {
-                    cartId: cart.id,
-                    productId: id,
+                    orderId:cart.dataValues.id,
+                    productId:id
                   }
                 }
             );
         }else{
-            await CartItem.create({cartId:cart.id,productId:id})
+            await OrderDetail.create({orderId:cart.dataValues.id,productId:id})
         }
-        const prod = await Product.findOne({where:{productId:id}})
-        await cart.update(({total:total+prod.price}))
-        res.json({message:"Added!",statusCode:200,data:[]})
+        const prod = await Product.findOne({ where: { id: id } });
+
+        let [updatedRows] = await Order.update(
+            { total: sequelize.literal(`total + ${prod.price}`) },
+            { where: { id: cart.dataValues.id } }
+        );
+        if (updatedRows > 0) {
+        res.json({ message: "Added!", statusCode: 200, data: [] });
+        } else {
+        next({ message: "Could not update cart", statusCode: 400 });
+        }
+
     } catch (error) {
         console.log(error);
         next({message:"error adding to cart",statusCode:401});
     }
 }
 
-export const removeFromCart = async (req,res,next)=>{
+export const removeFromCart = async (req, res, next) => {
     try {
-        const {id} = req.params;
-        const cart = await Cart.findOne({where:{userId: req.user.id}})
-        const cartItem = await CartItem.findOne({
-            where: { cartId:cart.id, productId:id }
+        const { id } = req.params;
+        const order = await Order.findOne({
+            where: { userId: req.user.id, status: false }
         });
-        const quantity = cartItem.quantity;
-        if (cartItem){
-            await CartItem.destroy({
+
+        const orderDetail = await OrderDetail.findOne({
+            where: { orderId:order.dataValues.id, productId: id }
+        });
+
+        if (orderDetail) {
+            const quantity = orderDetail.quantity;
+            await OrderDetail.destroy({
                 where: {
-                    cartId: cart.id,
+                    orderId:order.dataValues.id,
                     productId: id,
                 }
             });
-            const prod = await Product.findOne({where:{productId:id}})
-            await cart.update(({total:total-(prod.price*quantity)}))
-            res.json({message:"Item Removed",statusCode:200,data:[]});
-        }else{
-            next({message:"Product is not in your cart anymore",statusCode:400,data:[]})
+
+            const prod = await Product.findOne({ where: { id: id } });
+            const total = order.total - (prod.price * quantity);
+
+            await Order.update({ total: total }, { where: { id: order.dataValues.id } });
+
+            res.json({ message: "Item Removed", statusCode: 200, data: [] });
+        } else {
+            next({ message: "Product is not in your cart", statusCode: 400, data: [] });
         }
     } catch (error) {
-        next({message:"Could not remove item from cart",statusCode:400,data:[]});
+        next({ message: "Could not remove item from cart", statusCode: 400, data: [] });
     }
 }
+
+
 
 
 // Decrement Product
-export const decQuant = async (req,res,next)=>{
+export const decQuant = async (req, res, next) => {
     try {
-        const {id} = req.params
-        const cart = await Cart.findOne({where:{userId: req.user.id}})
-        const cartItem = await CartItem.findOne({
-            where: { cartId:cart.id, productId:id }
+        const { id } = req.params;
+        const order = await Order.findOne({
+            where: { userId: req.user.id, status: false }
         });
-          
-          if (cartItem && cartItem.quantity === 1) {
-            await CartItem.destroy({
-                where: { cartId:cart.id, productId:id }
-            });
-          } else if (cartItem && cartItem.quantity > 1) {
-            await CartItem.decrement(
-              { quantity: 1 },
-              {
-                where: { cartId:cart.id, productId:id }
-              }
-            );
-          }else{
-            next({message:"Product is not in your cart anymore",statusCode:400,data:[]})
-          }
 
-        res.json({message:"Removed!",statusCode:200,data:[]})
+        const orderDetail = await OrderDetail.findOne({
+            where:{
+                orderId:order.dataValues.id,
+                productId: id
+            }
+        });
+
+        if (orderDetail && orderDetail.quantity === 1) {
+            await OrderDetail.destroy({
+                where: {
+                    orderId:order.dataValues.id,
+                    productId: id
+                }
+            });
+
+            // Retrieve the product's price
+            const prod = await Product.findOne({ where: { id: id } });
+
+            await Order.decrement(
+                { total: prod.price },
+                {
+                    where: {
+                        id: order.dataValues.id,
+                        status: false
+                    }
+                }
+            );
+        } else if (orderDetail && orderDetail.quantity > 1) {
+            await OrderDetail.decrement(
+                { quantity: 1 },
+                {
+                    where: {
+                        orderId:order.dataValues.id,
+                        productId: id
+                    }
+                }
+            );
+
+            // Retrieve the product's price
+            const prod = await Product.findOne({ where: { id: id } });
+
+            await Order.decrement(
+                { total: prod.price },
+                {
+                    where: {
+                        id: order.id,
+                        status: false
+                    }
+                }
+            );
+        } else {
+            next({ message: "Product is not in your cart", statusCode: 400, data: [] });
+            return;
+        }
+
+        res.json({ message: "Decremented!", statusCode: 200, data: [] });
     } catch (error) {
-        next({message:"Error Occurred!",statusCode:400,data:[]})
+        next({ message: "Error occurred!", statusCode: 400, data: [] });
     }
 }
+

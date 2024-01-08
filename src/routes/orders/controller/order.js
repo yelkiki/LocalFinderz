@@ -1,87 +1,68 @@
-import sequelize, { Cart, CartItem, Order, OrderDetail, Product } from "../../../../database/sql.js"
+import sequelize, { Order, OrderDetail, Product } from "../../../../database/sql.js"
 
 
 
 
-export const placeOrder = async (req,res,next)=>{
+export const placeOrder = async (req, res, next) => {
     try {
-        const cart = await Cart.findOne({where:{userId: req.user.id}});
-        if (!cart || cart.total === 0){
-            next({message:"Your cart is empty",statusCode:400,data:error})
-        }else{
-            const cartId = cart.id
-            const sqlQuery = `
-            SELECT Products.name,Products.price,CartItems.quantity
-            FROM CartItems
-            JOIN Products ON CartItems.productId = Products.id
-            WHERE CartItems.cartId = :cartId
-            `;
-            const items = await sequelize.query(sqlQuery, {
-                replacements: { cartId },
-                type: sequelize.QueryTypes.SELECT,
-            });
-            let total = 0;
-            for (const item of items){
-                total+= item.price*item.quantity
-            }
+        const order = await Order.findOne({
+            where: { userId: req.user.id, status: false }
+        });
 
+        if (!order || order.total === 0) {
+            next({ message: "Your cart is empty", statusCode: 400 });
+        } else {
             const currentDate = new Date();
-            let order = await Order.create({userId:req.user.id,total:total,date:currentDate});
-
-
-
-            const query = `
-            INSERT INTO orderdetails (orderId, productId, quantity)
-            SELECT o.id AS orderId, ci.productId, ci.quantity
-            FROM carts c
-            JOIN cartitems ci ON c.id = ci.cartId
-            JOIN orders o ON c.userId = o.userId
-            WHERE c.id = ? AND o.id = ?;
-            `;
-
-            await sequelize.query(query, {
-                replacements: [cart.id, order.id],
-                type: sequelize.QueryTypes.INSERT
+            await Order.update({ status: true, date: currentDate }, {
+                where: { id: order.dataValues.id }
             });
-            
-            await Cart.destroy({
-                where: {
-                  userId: req.user.id,
-                }
-            });
-            await CartItem.destroy({
-                where:{
-                    cartId:cartId
-                }
-            })
 
-            res.json({message:"Done",statusCode:200,data:[]})
+            res.json({ message: "Order placed successfully", statusCode: 200, data: [] });
         }
     } catch (error) {
         console.log(error);
-        next({message:"Could not place order",statusCode:400,data:error})
+        next({ message: "Could not place order", statusCode: 400, data: error });
     }
 }
 
-
-export const orderDetails = async (req,res,next)=>{
-    const {orderId} = req.body;
+export const orderDetails = async (req, res, next) => {
+    const { orderId } = req.body;
     try {
-        const query = `
-        SELECT p.id, p.name, p.image, od.quantity, p.price * od.quantity AS cost, o.total
-        FROM OrderDetails AS od
-        INNER JOIN Products AS p ON od.productId = p.id
-        INNER JOIN orders AS o ON od.orderId = o.id
-        WHERE od.orderId = :orderId
-        `;
-        const items = await sequelize.query(query, {
-            replacements: { orderId },
-            type: sequelize.QueryTypes.SELECT,
+        const order = await Order.findOne({
+            where: { id: orderId },
+            attributes: ['date', 'total'],
+            include: [{ 
+                model: Product,
+                attributes: ['name', 'price', 'image'],
+                through: { 
+                    attributes: ['quantity'] 
+                },
+                as: 'products'
+            }]
         });
 
-        res.json({message:"Found",statusCode:200,data:items})
+        if (!order) {
+            return next({ message: "Order not found", statusCode: 404, data: null });
+        }
+
+        const formattedProducts = order.products.map(product => ({
+            name: product.name,
+            price: product.price,
+            image: product.image,
+            quantity: product.OrderDetail.quantity
+        }));
+
+        res.json({ 
+            message: "Found", 
+            statusCode: 200, 
+            data: {
+                date: order.date,
+                total: order.total,
+                products: formattedProducts
+            }
+        });
     } catch (error) {
         console.log(error);
-        next({message:"Could not view order details",statusCode:400,data:error})
+        next({ message: "Could not view order details", statusCode: 400, data: error });
     }
 }

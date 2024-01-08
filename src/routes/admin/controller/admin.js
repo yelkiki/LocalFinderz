@@ -1,4 +1,4 @@
-import sequelize, { Brand, Category, Product, User, syncDatabase } from "../../../../database/sql.js";
+import sequelize, { Brand, Product, User, syncDatabase } from "../../../../database/sql.js";
 
 export const addBrand = async (req,res,next)=>{
     const {name,email,address,phone,logo} = req.body;
@@ -52,15 +52,12 @@ export const addProduct = async (req,res,next)=>{
         const {name,price,sex,brand,quantity,category,image} = req.body;
         
         let BRAND = await Brand.findOne({where:{name:brand}})
-        let CAT = await Category.findOne({where:{name:category}})
+        
 
         if (!BRAND){
-            next({message:"Invalid Brand", statusCode:400,data:[]})
-        }else if(!CAT){
-            next({message:"Invalid Category", statusCode:400,data:[]})
-            
+            next({message:"Invalid Brand", statusCode:400,data:[]})            
         }else{
-            await Product.create({name:name,price:price,sex:sex,quantity:quantity,image:image,categoryId:CAT.dataValues.id,brandId:BRAND.dataValues.id})
+            await Product.create({name,price,sex,quantity,image,category,brandId:BRAND.dataValues.id})
             syncDatabase();
             res.json({message:"Product Created!",statusCode:200,data:[]});
         }

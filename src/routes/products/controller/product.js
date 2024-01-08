@@ -1,5 +1,5 @@
 import { Op } from "sequelize";
-import sequelize, { Brand, Category, Product } from "../../../../database/sql.js"
+import sequelize, { Brand, Product } from "../../../../database/sql.js"
 
 export const displayAll = async (req,res,next)=>{
     try {
@@ -69,28 +69,25 @@ export const getBrands = async (req,res,next)=>{
     }
 }
 
-export const getCategory = async (req,res,next)=>{
+export const getCategory = async (req, res, next) => {
     try {
-        const {category} = req.body;
-        let cat = await Category.findAll({where:{name:category}})
-        let products = await Product.findAll({where:{
-            categoryId: cat[0].dataValues.id
-        },include: [
-            {
-              model: Brand,
-              attributes: ['name']
-            }
-        ]})
-        if (!products.length){
-            next({message:"No Products available for this category",statusCode:400,data:[]})
-        }else{
-            res.json({message:"Successfull",statusCode:200,data:products})
-        }
+      const { category } = req.body;
+      let products = await Product.findAll({
+        where: { category },
+        include: [{ model: Brand, attributes: ['name'] }]
+      });
+  
+      if (!products.length) {
+        next({ message: "No Products available for this category", statusCode: 400, data: [] });
+      } else {
+        res.json({ message: "Successfully retrieved products", statusCode: 200, data: products });
+      }
     } catch (error) {
-        console.log(error);
-        next({message:"Error Getting Products in this category",statusCode:400,data:error})
+      console.log(error);
+      next({ message: "Error getting products in this category", statusCode: 400, data: error });
     }
-}
+  };
+  
 
 
 
@@ -111,7 +108,7 @@ export const search = async (req, res, next) => {
         ]
       });
       if (!products.length){
-        next({ message: "Cannot find with this keyword", statusCode: 400, data:error });
+        next({ message: "Cannot find with this keyword", statusCode: 400, data:[] });
       }
       res.json({ message: "found", statusCode: 200, data: products });
     } catch (error) {
@@ -131,7 +128,7 @@ export const searchBrand = async (req, res, next) => {
         }
       });
       if (!brands.length){
-        next({ message: "Cannot find Brand with this keyword", statusCode: 400, data:error });
+        next({ message: "Cannot find Brand with this keyword", statusCode: 400, data:[] });
       }
       res.json({ message: "found", statusCode: 200, data: brands });
     } catch (error) {

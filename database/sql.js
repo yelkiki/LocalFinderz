@@ -122,24 +122,7 @@ export const Product = sequelize.define('products', {
   quantity: {
     type: DataTypes.INTEGER,
   },
-  categoryId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'categories',
-      key: 'id',
-    },
-  },
-  
-},{timestamps: false});
-
-export const Category = sequelize.define('categories', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  name: {
+  category: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -160,28 +143,13 @@ export const Order = sequelize.define('orders', {
   total:{
     type: DataTypes.DECIMAL,
     allowNull: false,
+  },
+  status:{
+    type: DataTypes.BOOLEAN,
+    allowNull: false
   }
 }, { timestamps: false });
 
-export const Cart = sequelize.define('carts', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  total:{
-    type: DataTypes.DECIMAL,
-    defaultValue:0
-  }  
-},{timestamps: false});
-
-export const CartItem = sequelize.define('CartItem', {
-  quantity: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1
-  },
-},{timestamps: false});
 
 export const OrderDetail = sequelize.define('OrderDetail', {
   id: {
@@ -206,16 +174,6 @@ Product.belongsTo(Brand);
 
 Order.belongsToMany(Product, { through: OrderDetail });
 Product.belongsToMany(Order, { through: OrderDetail });
-
-Product.belongsTo(Category, { foreignKey: 'categoryId' });
-
-
-Cart.belongsTo(User);
-User.hasOne(Cart);
-
-
-Product.belongsToMany(Cart, { through: CartItem });
-Cart.belongsToMany(Product, { through: CartItem });
 
 
 
