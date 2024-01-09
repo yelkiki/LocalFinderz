@@ -163,7 +163,7 @@ export const filter = async (req, res, next) => {
   try {
     const { min, max, order, cat } = req.query;
     const replacements = [];
-    let query = 'SELECT products.name, products.image, products.price, brands.name AS brand FROM products LEFT JOIN brands ON products.brandId = brands.id WHERE ';
+    let query = 'SELECT products.id,products.name, products.image, products.price, brands.name AS brand FROM products LEFT JOIN brands ON products.brandId = brands.id WHERE ';
 
     if (min !== undefined) {
       query += 'products.price >= ? ';
