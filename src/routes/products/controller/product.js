@@ -111,7 +111,7 @@ export const search = async (req, res, next) => {
         ]
       });
       if (!products.length){
-        next({ message: "Cannot find with this keyword", statusCode: 400, data:error });
+        next({ message: "Cannot find with this keyword", statusCode: 400, data:[] });
       }
       res.json({ message: "found", statusCode: 200, data: products });
     } catch (error) {
@@ -131,7 +131,7 @@ export const searchBrand = async (req, res, next) => {
         }
       });
       if (!brands.length){
-        next({ message: "Cannot find Brand with this keyword", statusCode: 400, data:error });
+        next({ message: "Cannot find Brand with this keyword", statusCode: 400, data:[] });
       }
       res.json({ message: "found", statusCode: 200, data: brands });
     } catch (error) {
@@ -158,4 +158,52 @@ export const filterSex = async (req,res,next)=>{
         console.log(error);
         next({message:"Error Getting Products For this sex",statusCode:400,data:error})
     }
+};
+
+
+
+
+export const filter = async (req, res, next) => {
+  try {
+    const { min, max, order, cat } = req.query;
+    const replacements = [];
+    let query = 'SELECT products.id,products.name, products.image, products.price, brands.name AS brand FROM products LEFT JOIN brands ON products.brandId = brands.id JOIN categories ON categories.id = products.categoryId WHERE ';
+
+    if (min !== undefined) {
+      query += 'products.price >= ? ';
+      replacements.push(min);
+    }
+
+    if (max !== undefined) {
+      if (replacements.length > 0) query += 'AND ';
+      query += 'products.price <= ? ';
+      replacements.push(max);
+    }
+
+    if (cat !== undefined) {
+      if (replacements.length > 0) query += 'AND ';
+      query += 'categories.name = ? ';
+      replacements.push(cat);
+    }
+
+    if (min == undefined && max == undefined && cat == undefined) {
+      query = 'SELECT products.name, products.image, products.price, brands.name AS brand FROM products LEFT JOIN brands ON products.brandId = brands.id products.price JOIN category ON products.categoryId = category.id ORDER BY products.price ' + (order === 'desc' ? 'DESC' : 'ASC') + ';';
+    }else{
+      query += 'ORDER BY products.price ' + (order === 'desc' ? 'DESC' : 'ASC') + ';';
+    }
+
+    let result = await sequelize.query(query, {
+      replacements: replacements,
+      type: sequelize.QueryTypes.SELECT,
+    });
+
+    if (!result.length) {
+      next({ message: "No products with these specifications", statusCode: 400, data: [] });
+    } else {
+      res.json({ message: "Found", statusCode: 200, data: result });
+    }
+  } catch (error) {
+    console.log(error);
+    next({ message: "Error filtering products", statusCode: 400, data: error });
+  }
 };
